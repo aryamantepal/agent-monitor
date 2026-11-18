@@ -7,7 +7,7 @@ actor Engine {
     private let sampler = DarwinSampler()
 
     func snapshot() -> Snapshot {
-        Attribution.snapshot(sampler.sample(), cwd: sampler.workingDirectory)
+        Attribution.snapshot(sampler.sample(), cwd: sampler.workingDirectory, ports: sampler.listeningPorts)
     }
 
     func members(of id: String) -> [Proc] {

@@ -11,8 +11,15 @@ public enum Attribution {
     /// Unattributed processes are listed above this CPU %.
     public static let otherCPU = 30.0
     public static let topActivities = 4
+    /// Agents themselves listen on random high ports for IDE and MCP plumbing. Only ports below
+    /// the ephemeral range, opened by processes the agent spawned, are worth a badge.
+    public static let ephemeralPorts: UInt16 = 49152
 
-    public static func snapshot(_ list: [Proc], cwd: (Int32) -> String? = { _ in nil }) -> Snapshot {
+    public static func snapshot(
+        _ list: [Proc],
+        cwd: (Int32) -> String? = { _ in nil },
+        ports: (Int32) -> [UInt16] = { _ in [] }
+    ) -> Snapshot {
         let procs = Dictionary(list.map { ($0.pid, $0) }, uniquingKeysWith: { a, _ in a })
         let agents = procs.compactMapValues { classify($0.command) }
 
@@ -71,7 +78,9 @@ public enum Attribution {
                 root: root,
                 label: agent.kind == .cli ? shortPath(cwd(root.pid)) : "",
                 procs: procs,
-                activities: busy.map(activity)
+                activities: busy.map(activity),
+                ports: Array(Set(procs.filter { agents[$0.pid] == nil }.flatMap { ports($0.pid) }
+                    .filter { $0 < ephemeralPorts })).sorted()
             )
             groups[agent.name, default: []].append(session)
         }

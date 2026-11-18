@@ -39,6 +39,7 @@ scripts/bundle.sh        # → dist/AgentMonitor.app
 - Each Claude Code or `cursor-agent` terminal is its own session, labeled by its project folder (worktrees are marked). A desktop app like Cursor is one card for the app and all its helpers.
 - A sparkline of the last three minutes of CPU, plus current CPU and memory.
 - A status line: `idle`, `working`, or what it's running, such as `running cargo build in forge`.
+- Badges for any ports its processes are listening on, such as `:3000`, so you can tell which worktree's dev server is which.
 - Up to four of the busiest commands under it, each with a kill button.
 
 **Orphaned from closed agents** lists processes that outlived the session that started them, such as a `next dev` server, a headless browser or an MCP server left running after you closed Claude Code. Each row shows which session it came from. Kill them one by one or use **Clean up all**. Nothing is ever killed automatically, because sometimes you want that dev server to stay up.

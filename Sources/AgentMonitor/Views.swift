@@ -110,6 +110,9 @@ struct SessionView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(session.title).font(.callout.weight(.medium)).lineLimit(1)
+                        ForEach(session.ports.prefix(3), id: \.self) { port in
+                            Badge(text: ":\(port)", color: .green)
+                        }
                         if throttled { Badge(text: "throttled", color: .orange) }
                         if paused { Badge(text: "paused", color: .blue) }
                     }
