@@ -95,9 +95,9 @@ private func p(_ pid: Int32, _ ppid: Int32, _ command: String, cpu: Double = 0, 
 
 @Test func parsesProcArgs() {
     var bytes: [UInt8] = withUnsafeBytes(of: Int32(3)) { Array($0) }
-    bytes += Array("/usr/bin/node".utf8) + [0, 0, 0]
-    bytes += Array("node".utf8) + [0] + Array("server.js".utf8) + [0] + Array("--port=3".utf8) + [0]
-    bytes += Array("PATH=/bin".utf8) + [0]
+    func cString(_ s: String) -> [UInt8] { Array(s.utf8) + [0] }
+    bytes += cString("/usr/bin/node") + [0, 0]
+    for arg in ["node", "server.js", "--port=3", "PATH=/bin"] { bytes += cString(arg) }
     #expect(DarwinSampler.parseProcArgs(bytes[...]) == "node server.js --port=3")
 }
 
