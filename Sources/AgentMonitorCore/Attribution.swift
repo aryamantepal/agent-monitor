@@ -43,10 +43,10 @@ public enum Attribution {
         // fold each app into one session keyed by name, rooted at its oldest process.
         var members: [String: [Proc]] = [:]
         var rootOf: [String: Proc] = [:]
-        var other: [Proc] = []
+        var loose: [Proc] = []
         for p in list {
             guard let r = sessionRoot(of: p.pid), let root = procs[r], let agent = agents[r] else {
-                if p.cpu >= otherCPU { other.append(p) }
+                loose.append(p)
                 continue
             }
             let key = agent.kind == .app ? agent.name : "\(root.pid)@\(Int(root.started))"
@@ -79,6 +79,7 @@ public enum Attribution {
         let ordered = groups.map { name, sessions in
             AgentGroup(name: name, sessions: sessions.sorted { ($0.cpu, $1.id) > ($1.cpu, $0.id) })
         }.sorted { ($0.cpu, $1.name) > ($1.cpu, $0.name) }
-        return Snapshot(groups: ordered, other: other.sorted { $0.cpu > $1.cpu }.map(activity))
+        let other = loose.filter { $0.cpu >= otherCPU }.sorted { $0.cpu > $1.cpu }.map(activity)
+        return Snapshot(groups: ordered, other: other, unattributed: loose)
     }
 }

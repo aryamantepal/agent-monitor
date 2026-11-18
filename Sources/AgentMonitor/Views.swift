@@ -23,10 +23,27 @@ struct MenuView: View {
             ForEach(snap.groups) { group in
                 GroupView(group: group, monitor: monitor, interactive: interactive, sparklineLength: sparklineLength)
             }
-            if !snap.other.isEmpty {
+            if !monitor.orphans.isEmpty {
+                Divider()
+                HStack {
+                    Text("Orphaned from closed agents").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                    Spacer()
+                    if interactive {
+                        Button("Clean up all") { monitor.cleanUpOrphans() }
+                            .controlSize(.small)
+                    }
+                }
+                ForEach(monitor.orphans) { o in
+                    let a = Activity(proc: o.proc, summary: shortCommand(o.proc.command), place: "from \(o.from)")
+                    ActivityRow(activity: a, interactive: interactive, showsMemory: true) { monitor.kill(o.proc) }
+                }
+            }
+            let orphanIDs = Set(monitor.orphans.map(\.id))
+            let other = snap.other.filter { !orphanIDs.contains($0.proc.identity) }
+            if !other.isEmpty {
                 Divider()
                 Text("Not an agent").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
-                ForEach(snap.other, id: \.proc.pid) { a in
+                ForEach(other, id: \.proc.pid) { a in
                     ActivityRow(activity: a, interactive: interactive) { monitor.kill(a.proc) }
                 }
             }
@@ -145,6 +162,7 @@ struct SessionView: View {
 struct ActivityRow: View {
     let activity: Activity
     var interactive = true
+    var showsMemory = false
     let kill: () -> Void
 
     var body: some View {
@@ -154,7 +172,8 @@ struct ActivityRow: View {
                 Text(activity.place).font(.caption).foregroundStyle(.tertiary).lineLimit(1)
             }
             Spacer(minLength: 4)
-            Text(formatCPU(activity.proc.cpu)).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            Text(showsMemory ? "\(formatCPU(activity.proc.cpu)) · \(formatMemory(activity.proc.memory))" : formatCPU(activity.proc.cpu))
+                .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
             if interactive {
                 Button(action: kill) { Image(systemName: "xmark.circle.fill") }
                     .buttonStyle(.borderless)

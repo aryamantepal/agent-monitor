@@ -29,6 +29,8 @@ final class Monitor {
     private(set) var history: [String: [Double]] = [:]
     private(set) var throttled: Set<String> = []
     private(set) var paused: [String: [ProcID]] = [:]
+    private(set) var orphans: [Orphan] = []
+    private var orphanTracker = OrphanTracker()
 
     private let engine = Engine()
     private var loop: Task<Void, Never>?
@@ -61,6 +63,7 @@ final class Monitor {
             history[session.id] = Array(values.suffix(Self.historyLength))
         }
         history = history.filter { live.contains($0.key) }
+        orphans = orphanTracker.update(snap, now: Date().timeIntervalSince1970)
         snapshot = snap
     }
 
@@ -96,5 +99,10 @@ final class Monitor {
 
     func kill(_ p: Proc) {
         Task { await Control.terminate([p]) }
+    }
+
+    func cleanUpOrphans() {
+        let procs = orphans.map(\.proc)
+        Task { await Control.terminate(procs) }
     }
 }

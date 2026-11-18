@@ -41,7 +41,9 @@ scripts/bundle.sh        # → dist/AgentMonitor.app
 - A status line: `idle`, `working`, or what it's running, such as `running cargo build in forge`.
 - Up to four of the busiest commands under it, each with a kill button.
 
-Below the agents, **Not an agent** lists any of your other processes using more than 30% CPU, such as Chrome helpers.
+**Orphaned from closed agents** lists processes that outlived the session that started them, such as a `next dev` server, a headless browser or an MCP server left running after you closed Claude Code. Each row shows which session it came from. Kill them one by one or use **Clean up all**. Nothing is ever killed automatically, because sometimes you want that dev server to stay up.
+
+Below that, **Not an agent** lists any of your other processes using more than 30% CPU, such as Chrome helpers.
 
 ## Controls
 

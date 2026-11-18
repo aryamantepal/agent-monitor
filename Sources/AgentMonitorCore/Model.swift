@@ -48,6 +48,12 @@ public struct Activity: Sendable, Equatable {
     public let proc: Proc
     public let summary: String
     public let place: String
+
+    public init(proc: Proc, summary: String, place: String) {
+        self.proc = proc
+        self.summary = summary
+        self.place = place
+    }
 }
 
 public struct Session: Sendable, Identifiable {
@@ -89,6 +95,8 @@ public struct Snapshot: Sendable {
     public let groups: [AgentGroup]
     /// Busy processes that belong to no agent.
     public let other: [Activity]
+    /// Every process that belongs to no session, busy or not.
+    public var unattributed: [Proc] = []
     public static let empty = Snapshot(groups: [], other: [])
 
     public var cpu: Double { groups.reduce(0) { $0 + $1.cpu } }
