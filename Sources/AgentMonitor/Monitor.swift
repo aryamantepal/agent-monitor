@@ -50,7 +50,7 @@ final class Monitor {
         // Throttling isn't inherited by children that already exist, and agents spawn new ones
         // constantly, so re-apply it to every member on every poll.
         for session in snap.sessions where throttled.contains(session.id) {
-            Control.setThrottled(session.procs, true)
+            Control.setThrottled(session.workers, true)
         }
         throttled.formIntersection(live)
         paused = paused.filter { live.contains($0.key) && $0.value.contains(where: Control.isAlive) }
@@ -74,7 +74,7 @@ final class Monitor {
             Control.setThrottled(s.procs, false)
         } else {
             throttled.insert(s.id)
-            Control.setThrottled(s.procs, true)
+            Control.setThrottled(s.workers, true)
         }
     }
 

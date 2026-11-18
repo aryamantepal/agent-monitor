@@ -64,6 +64,9 @@ public struct Session: Sendable, Identifiable {
     public var memory: UInt64 { procs.reduce(0) { $0 + $1.memory } }
     public var watts: Double { procs.reduce(0) { $0 + $1.watts } }
     public var title: String { label.isEmpty ? agent.name : label }
+    /// Everything the agent spawned, minus the agent's own processes. Throttle targets these, so
+    /// the agent's UI and model connection stay responsive while its builds and tests slow down.
+    public var workers: [Proc] { procs.filter { classify($0.command) == nil } }
 
     public var status: String {
         if let t = activities.first {
