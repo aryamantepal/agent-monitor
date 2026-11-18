@@ -5,6 +5,7 @@ public protocol ProcessSampler: AnyObject {
     /// Every process, with CPU % and watts computed against the previous call (zero on the first).
     func sample() -> [Proc]
     func workingDirectory(_ pid: Int32) -> String?
+    func listeningPorts(_ pid: Int32) -> [UInt16]
 }
 
 /// Reads the process table straight from the kernel through libproc and sysctl.
@@ -88,6 +89,31 @@ public final class DarwinSampler: ProcessSampler {
         guard proc_pidinfo(pid, PROC_PIDVNODEPATHINFO, 0, &info, size) == size else { return nil }
         let path = Self.string(info.pvi_cdir.vip_path)
         return path.isEmpty ? nil : path
+    }
+
+    /// TCP ports this process is listening on. Only readable for your own processes.
+    public func listeningPorts(_ pid: Int32) -> [UInt16] {
+        let stride = MemoryLayout<proc_fdinfo>.stride
+        let needed = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, nil, 0)
+        guard needed > 0 else { return [] }
+        var fds = [proc_fdinfo](repeating: proc_fdinfo(), count: Int(needed) / stride + 16)
+        let filled = fds.withUnsafeMutableBytes {
+            proc_pidinfo(pid, PROC_PIDLISTFDS, 0, $0.baseAddress, Int32($0.count))
+        }
+        guard filled > 0 else { return [] }
+
+        var ports = Set<UInt16>()
+        for fd in fds.prefix(Int(filled) / stride) where fd.proc_fdtype == UInt32(PROX_FDTYPE_SOCKET) {
+            var info = socket_fdinfo()
+            let size = Int32(MemoryLayout<socket_fdinfo>.stride)
+            guard proc_pidfdinfo(pid, fd.proc_fd, PROC_PIDFDSOCKETINFO, &info, size) == size,
+                  info.psi.soi_kind == SOCKINFO_TCP else { continue }
+            let tcp = info.psi.soi_proto.pri_tcp
+            guard tcp.tcpsi_state == TSI_S_LISTEN else { continue }
+            // The port sits in the low 16 bits, in network byte order.
+            ports.insert(UInt16(bigEndian: UInt16(truncatingIfNeeded: tcp.tcpsi_ini.insi_lport)))
+        }
+        return ports.sorted()
     }
 
     // MARK: kernel calls

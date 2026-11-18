@@ -65,6 +65,8 @@ public struct Session: Sendable, Identifiable {
     public let label: String
     public let procs: [Proc]
     public let activities: [Activity]
+    /// TCP ports any process in the session is listening on, e.g. a dev server's 3000.
+    public var ports: [UInt16] = []
 
     public var cpu: Double { procs.reduce(0) { $0 + $1.cpu } }
     public var memory: UInt64 { procs.reduce(0) { $0 + $1.memory } }

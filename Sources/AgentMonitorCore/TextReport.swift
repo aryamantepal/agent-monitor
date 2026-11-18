@@ -11,7 +11,8 @@ public enum TextReport {
         for g in snap.groups {
             lines.append("\(g.name)  \(Int(g.cpu.rounded()))% CPU  \(mem(g.memory))  \(watts(g.watts))")
             for s in g.sessions {
-                lines.append("  \(s.title): \(s.status)  (\(Int(s.cpu.rounded()))%, \(mem(s.memory)), \(s.procs.count) procs)")
+                let ports = s.ports.map { ":\($0)" }.joined(separator: " ")
+                lines.append("  \(s.title)\(ports.isEmpty ? "" : " [\(ports)]"): \(s.status)  (\(Int(s.cpu.rounded()))%, \(mem(s.memory)), \(s.procs.count) procs)")
                 for a in s.activities {
                     lines.append("    \(pad(String(a.proc.pid), 6)) \(pad("\(Int(a.proc.cpu.rounded()))%", 5)) \(pad(mem(a.proc.memory), 5))  \(a.summary)  [\(a.place)]")
                 }

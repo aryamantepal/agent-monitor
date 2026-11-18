@@ -106,3 +106,17 @@ private func p(_ pid: Int32, _ ppid: Int32, _ command: String, cpu: Double = 0, 
     let procs = [p(3, 2, "c"), p(1, 0, "a"), p(2, 1, "b"), p(9, 1, "d")]
     #expect(Control.topDown(procs).map(\.pid) == [1, 2, 9, 3])
 }
+
+@Test func sessionsCollectListeningPortsFromAllMembers() {
+    let table = [
+        p(200, 100, claude),
+        p(210, 200, "node next dev"),
+        p(220, 210, "node worker"),
+        p(900, 1, "nginx"),
+    ]
+    // 200 is the agent's own IDE port; 55000 is ephemeral; 900 belongs to no session.
+    let ports: (Int32) -> [UInt16] = { [200: [8123], 210: [3000], 220: [3000, 9229, 55000], 900: [80]][$0] ?? [] }
+    let s = Attribution.snapshot(table, ports: ports).sessions
+    #expect(s.count == 1)
+    #expect(s[0].ports == [3000, 9229])
+}

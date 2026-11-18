@@ -30,7 +30,8 @@ if args.contains("--text") {
     let sampler = DarwinSampler()
     _ = sampler.sample()
     Thread.sleep(forTimeInterval: 1)
-    print(TextReport.render(Attribution.snapshot(sampler.sample(), cwd: sampler.workingDirectory)))
+    print(TextReport.render(Attribution.snapshot(sampler.sample(), cwd: sampler.workingDirectory,
+                                              ports: sampler.listeningPorts)))
 } else if let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count {
     let seconds = args.firstIndex(of: "--seconds").flatMap { Int(args[$0 + 1]) } ?? 10
     MainActor.assumeIsolated {

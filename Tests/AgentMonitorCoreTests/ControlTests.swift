@@ -55,3 +55,16 @@ private func state(_ pid: Int32) -> String {
     sh.waitUntilExit()
     for p in procs { #expect(!Control.isAlive(p.identity)) }
 }
+
+@Test func readsListeningPortsOfARealProcess() throws {
+    let server = Process()
+    server.executableURL = URL(fileURLWithPath: "/usr/bin/python3")
+    server.arguments = ["-c", "import socket,time; s=socket.socket(); s.bind(('127.0.0.1',0)); s.listen(); print(s.getsockname()[1], flush=True); time.sleep(30)"]
+    let out = Pipe()
+    server.standardOutput = out
+    try server.run()
+    defer { server.terminate() }
+    let line = out.fileHandleForReading.availableData
+    let port = try #require(UInt16(String(decoding: line, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)))
+    #expect(DarwinSampler().listeningPorts(server.processIdentifier) == [port])
+}
