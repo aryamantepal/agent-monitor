@@ -30,29 +30,44 @@ Or build it yourself (the Command Line Tools are enough):
 scripts/bundle.sh        # → dist/AgentMonitor.app
 ```
 
-## What it shows
+## What it does
 
-Every process is attributed to its nearest ancestor that is an agent. Each Claude Code or `cursor-agent` CLI is its own session, labeled by its working directory, and desktop apps fold into one session together with their helpers. Each session shows:
+**In the menu bar:** a CPU icon and the total CPU all your agents are using, such as `212%`. 100% means one full core, so an agent running parallel builds or tests can go well past 100%.
 
-- CPU, with a sparkline of the last three minutes. 100% is one full core, so a session running parallel builds or tests can show 300% or more.
-- Memory, as physical footprint (what Activity Monitor shows), not RSS.
-- The busiest commands running under it, each with a kill button.
-- Power, from the kernel's per-process energy counter. This is an estimate: the chip only measures power per cluster, and the kernel divides it among processes.
+**When you click it**, agents are grouped by tool (Claude Code, Codex, Cursor, Antigravity, Claude Desktop), with CPU, memory and power totals for each. Every session gets a card:
 
-Busy processes that belong to no agent are listed under "Not an agent". This only covers your own processes, because reading root processes' CPU needs root.
+- Each Claude Code or `cursor-agent` terminal is its own session, labeled by its project folder (worktrees are marked). A desktop app like Cursor is one card for the app and all its helpers.
+- A sparkline of the last three minutes of CPU, plus current CPU and memory.
+- A status line: `idle`, `working`, or what it's running, such as `running cargo build in forge`.
+- Up to four of the busiest commands under it, each with a kill button.
+
+Below the agents, **Not an agent** lists any of your other processes using more than 30% CPU, such as Chrome helpers.
 
 ## Controls
 
-The `⋯` menu on each session acts on its whole process tree:
+The `⋯` button on each card acts on the session's whole process tree:
 
-- **Throttle** puts every process in the session under macOS's background policy (`PRIO_DARWIN_BG`, the same as `taskpolicy -b`): lowest CPU priority, efficiency cores, throttled disk and network I/O. The agent keeps working, only slower, and nothing times out. Existing children don't inherit the policy, so it is re-applied on every poll to catch new ones.
-- **Pause** sends `SIGSTOP` top-down: the parent first, so it can't spawn children that get missed, re-reading the tree until nothing new appears. Resume continues them bottom-up. While paused, the agent's connection to its model API can time out, so prefer throttle unless you need the CPU back immediately.
-- **Kill** sends `SIGTERM` to the whole tree (plus `SIGCONT`, so paused processes can handle it), then `SIGKILL` to anything still alive after 3 seconds.
+- **Throttle** (the safe default): moves every process in the session to macOS's background priority, the same policy as `taskpolicy -b`. It runs on efficiency cores with throttled disk and network I/O. The agent keeps working, more slowly, and nothing breaks. Existing child processes don't inherit the policy, so it is re-applied on every poll to catch new ones.
+- **Pause**: freezes every process with `SIGSTOP`, parent first so it can't spawn children that get missed, re-reading the tree until nothing new appears. Resume continues them in reverse order. It frees the CPU immediately, but while paused the agent's connection to its model can time out.
+- **Kill session**: sends `SIGTERM` to every process (plus `SIGCONT`, so paused ones can handle it), then `SIGKILL` to anything still running after 3 seconds.
+
+## How it works
+
+Every 2 seconds it reads the process list straight from the kernel, which costs about 0.8% of one core. Each process is assigned to the nearest agent above it in the process tree. That's how it knows a `node vitest` process belongs to your Claude session in `web`.
+
+- CPU is measured over each 2-second interval, not taken from `ps`, whose figure is averaged over roughly the last minute.
+- Memory is the physical footprint, the number Activity Monitor shows, not RSS.
+
+## Limits
+
+- Power is the kernel's estimate, not a measurement. The chip only measures power per group of cores, and the kernel divides that among processes.
+- It can't see CPU use by system processes that run as root.
+- It keeps no history and doesn't track cost.
 
 ## Terminal view
 
 ```sh
-dist/AgentMonitor.app/Contents/MacOS/AgentMonitor --text
+/Applications/AgentMonitor.app/Contents/MacOS/AgentMonitor --text
 ```
 
 The original v0, a SwiftBar plugin in Python, is kept in [`swiftbar/`](swiftbar/).
