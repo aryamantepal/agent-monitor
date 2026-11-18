@@ -4,15 +4,27 @@ Activity Monitor for AI coding agents. A macOS menu-bar app that shows which age
 
 ## Install
 
-Download `AgentMonitor.zip` from [Releases](https://github.com/aryamantepal/agent-monitor/releases), unzip it, and move `AgentMonitor.app` to Applications. It's ad-hoc signed, not notarized, so the first time either right-click it and choose **Open**, or run:
+```sh
+curl -fsSL https://raw.githubusercontent.com/aryamantepal/agent-monitor/main/install.sh | sh
+```
+
+This installs the latest release into `/Applications` and starts it. Run it again to update. To keep it running across restarts, tick **Open at login** at the bottom of its menu. Requires macOS 14 or later, on Apple Silicon or Intel.
+
+<details>
+<summary>Installing by hand</summary>
+
+Download `AgentMonitor.zip` from [Releases](https://github.com/aryamantepal/agent-monitor/releases), unzip it, and move `AgentMonitor.app` to Applications. The app isn't notarized, so macOS blocks it the first time you open it. To allow it, open **System Settings → Privacy & Security** and click **Open Anyway**, or run:
 
 ```sh
 xattr -d com.apple.quarantine /Applications/AgentMonitor.app
 ```
 
-Requires macOS 14 or later on Apple Silicon.
+The install script avoids this step: files fetched with `curl` aren't quarantined the way browser downloads are.
+</details>
 
-Or build it yourself (only needs the Command Line Tools):
+To uninstall, quit it from its menu and delete `/Applications/AgentMonitor.app`.
+
+Or build it yourself (the Command Line Tools are enough):
 
 ```sh
 scripts/bundle.sh        # → dist/AgentMonitor.app
@@ -53,3 +65,5 @@ swift run AgentMonitor   # run from source
 ```
 
 `Sources/AgentMonitorCore` holds the sampler (libproc and sysctl), attribution and process control, and has no UI dependencies. `Sources/AgentMonitor` holds the SwiftUI menu-bar app.
+
+To release, push a tag such as `v0.2.0`. GitHub Actions runs the tests, builds a universal app and publishes it, and `install.sh` then picks it up.

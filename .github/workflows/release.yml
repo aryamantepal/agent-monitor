@@ -1,0 +1,20 @@
+# Push a tag like v0.2.0 to build a universal app and publish it as a GitHub release.
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/test.sh
+      - run: scripts/bundle.sh "${GITHUB_REF_NAME#v}"
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/AgentMonitor.zip \
+            --title "$GITHUB_REF_NAME" --generate-notes

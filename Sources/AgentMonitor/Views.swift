@@ -32,9 +32,10 @@ struct MenuView: View {
             }
             if interactive {
                 Divider()
+                Text("CPU: 100% = one core. Power is the kernel's estimate.")
+                    .font(.caption2).foregroundStyle(.tertiary)
                 HStack {
-                    Text("CPU: 100% = one core. Power is the kernel's estimate.")
-                        .font(.caption2).foregroundStyle(.tertiary)
+                    LoginItemToggle()
                     Spacer()
                     Button("Quit") { NSApplication.shared.terminate(nil) }
                         .keyboardShortcut("q")
