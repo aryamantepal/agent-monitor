@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import AgentMonitorCore
 
@@ -119,4 +120,18 @@ private func p(_ pid: Int32, _ ppid: Int32, _ command: String, cpu: Double = 0, 
     let s = Attribution.snapshot(table, ports: ports).sessions
     #expect(s.count == 1)
     #expect(s[0].ports == [3000, 9229])
+}
+
+@Test func jsonReportHasSessionsWithPorts() throws {
+    let table = [p(200, 100, claude, cpu: 12.345, mem: 1024), p(210, 200, "node next dev", cpu: 40)]
+    let snap = Attribution.snapshot(table, cwd: { $0 == 200 ? "/Users/me/forge" : nil }, ports: { $0 == 210 ? [3000] : [] })
+    let json = JSONReport.render(snap, pretty: false)
+    let root = try #require(try JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+    #expect(root["cpu"] as? Double == 52.3)
+    let session = try #require(((root["agents"] as? [[String: Any]])?.first?["sessions"] as? [[String: Any]])?.first)
+    #expect(session["title"] as? String == "forge")
+    #expect(session["ports"] as? [Int] == [3000])
+    #expect(session["kind"] as? String == "cli")
+    #expect((session["activities"] as? [[String: Any]])?.first?["summary"] as? String == "node next dev")
+    #expect(!json.contains("\n"), "compact form is one line, for NDJSON")
 }

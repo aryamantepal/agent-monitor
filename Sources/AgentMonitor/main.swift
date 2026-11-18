@@ -23,15 +23,38 @@ struct AgentMonitorApp: App {
     }
 }
 
-/// `--text`: print once to the terminal. `--snapshot out.png [--seconds n]`: render the menu to
-/// an image after sampling for n seconds (used for the README screenshot).
+let usage = """
+    Usage: AgentMonitor [option]
+      (no option)          run the menu-bar app
+      --text               print a report once
+      --json               print a JSON report once
+      --json --watch       print one JSON line every 2 seconds (NDJSON)
+      --snapshot out.png [--seconds n] [--dark]
+                           render the menu to an image after sampling for n seconds
+    """
+
+/// One-shot reports sample twice, a second apart, because CPU % is a rate.
+func report(_ sampler: DarwinSampler) -> Snapshot {
+    Attribution.snapshot(sampler.sample(), cwd: sampler.workingDirectory, ports: sampler.listeningPorts)
+}
+
 let args = CommandLine.arguments
-if args.contains("--text") {
+if args.contains("--help") || args.contains("-h") {
+    print(usage)
+} else if args.contains("--json") && args.contains("--watch") {
+    let sampler = DarwinSampler()
+    _ = sampler.sample()
+    while true {
+        Thread.sleep(forTimeInterval: 2)
+        print(JSONReport.render(report(sampler), pretty: false))
+        fflush(stdout)
+    }
+} else if args.contains("--json") || args.contains("--text") {
     let sampler = DarwinSampler()
     _ = sampler.sample()
     Thread.sleep(forTimeInterval: 1)
-    print(TextReport.render(Attribution.snapshot(sampler.sample(), cwd: sampler.workingDirectory,
-                                              ports: sampler.listeningPorts)))
+    let snap = report(sampler)
+    print(args.contains("--json") ? JSONReport.render(snap, pretty: true) : TextReport.render(snap))
 } else if let i = args.firstIndex(of: "--snapshot"), i + 1 < args.count {
     let seconds = args.firstIndex(of: "--seconds").flatMap { Int(args[$0 + 1]) } ?? 10
     MainActor.assumeIsolated {

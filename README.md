@@ -67,10 +67,19 @@ Every 2 seconds it reads the process list straight from the kernel, which costs 
 - It can't see CPU use by system processes that run as root.
 - It keeps no history and doesn't track cost.
 
-## Terminal view
+## Terminal and JSON
 
 ```sh
-/Applications/AgentMonitor.app/Contents/MacOS/AgentMonitor --text
+alias agentmon=/Applications/AgentMonitor.app/Contents/MacOS/AgentMonitor
+agentmon --text             # readable report
+agentmon --json             # one JSON report
+agentmon --json --watch     # one JSON line every 2 seconds, for widgets and scripts
+```
+
+The JSON has totals plus `agents[].sessions[]`, each with `title`, `status`, `cpu` (percent of one core), `memory` (bytes), `watts`, `ports` and its busiest `activities`. For example, to put agent CPU in a tmux status line:
+
+```sh
+agentmon --json | jq -r '"agents \(.cpu | round)%"'
 ```
 
 The original v0, a SwiftBar plugin in Python, is kept in [`swiftbar/`](swiftbar/).
