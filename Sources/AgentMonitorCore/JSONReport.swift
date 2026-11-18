@@ -44,7 +44,8 @@ public enum JSONReport {
     }
 
     public static func render(_ snap: Snapshot, pretty: Bool, now: Date = Date()) -> String {
-        func r(_ v: Double) -> Double { (v * 10).rounded() / 10 }
+        // JSONEncoder throws on NaN or infinity; report those as 0 rather than failing the line.
+        func r(_ v: Double) -> Double { v.isFinite ? (v * 10).rounded() / 10 : 0 }
         func item(_ a: Activity) -> Item {
             Item(pid: a.proc.pid, command: a.proc.command, summary: a.summary, place: a.place,
                  cpu: r(a.proc.cpu), memory: a.proc.memory)
@@ -69,7 +70,11 @@ public enum JSONReport {
         encoder.keyEncodingStrategy = .convertToSnakeCase
         encoder.outputFormatting = pretty ? [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
                                           : [.sortedKeys, .withoutEscapingSlashes]
-        guard let data = try? encoder.encode(root) else { return "{}" }
-        return String(decoding: data, as: UTF8.self)
+        do {
+            return String(decoding: try encoder.encode(root), as: UTF8.self)
+        } catch {
+            FileHandle.standardError.write(Data("agent-monitor: JSON encoding failed: \(error)\n".utf8))
+            return "{}"
+        }
     }
 }
