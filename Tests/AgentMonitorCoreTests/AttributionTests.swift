@@ -46,6 +46,7 @@ private func p(_ pid: Int32, _ ppid: Int32, _ command: String, cpu: Double = 0, 
     #expect(sessions[0].activities.map(\.proc.pid) == [310, 220])
     #expect(sessions[0].status == "running cargo build")
     #expect(sessions[1].status == "idle")
+    #expect(Set(sessions[0].workers.map(\.pid)) == [210, 220, 310], "agent processes 200 and 300 are not workers")
     #expect(snap.other.map(\.proc.pid) == [900])
 }
 

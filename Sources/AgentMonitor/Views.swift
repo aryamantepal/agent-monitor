@@ -123,7 +123,7 @@ struct SessionView: View {
         let throttled = monitor.isThrottled(session)
         let paused = monitor.isPaused(session)
         return Menu {
-            Button(throttled ? "Stop throttling" : "Throttle (background priority)") {
+            Button(throttled ? "Stop throttling" : "Throttle its builds and tests") {
                 monitor.toggleThrottle(session)
             }
             Button(paused ? "Resume" : "Pause (may drop the agent's connection)") {

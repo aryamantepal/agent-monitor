@@ -47,7 +47,7 @@ Below the agents, **Not an agent** lists any of your other processes using more 
 
 The `⋯` button on each card acts on the session's whole process tree:
 
-- **Throttle** (the safe default): moves every process in the session to macOS's background priority, the same policy as `taskpolicy -b`. It runs on efficiency cores with throttled disk and network I/O. The agent keeps working, more slowly, and nothing breaks. Existing child processes don't inherit the policy, so it is re-applied on every poll to catch new ones.
+- **Throttle** (the safe default): moves everything the agent spawned (builds, tests, dev servers) to macOS's background priority, the same policy as `taskpolicy -b`. Those processes run on efficiency cores with throttled disk and network I/O. The agent's own process stays at normal priority, so its UI and model connection stay responsive while the heavy work slows down. Existing child processes don't inherit the policy, so it is re-applied on every poll to catch new ones.
 - **Pause**: freezes every process with `SIGSTOP`, parent first so it can't spawn children that get missed, re-reading the tree until nothing new appears. Resume continues them in reverse order. It frees the CPU immediately, but while paused the agent's connection to its model can time out.
 - **Kill session**: sends `SIGTERM` to every process (plus `SIGCONT`, so paused ones can handle it), then `SIGKILL` to anything still running after 3 seconds.
 
